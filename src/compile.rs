@@ -175,7 +175,7 @@ impl<'a> Compiler<'a> {
           self.pool.extend_from_slice(b);
         }
         let len = b.len() as u32;
-        if top_level && self.best_literal.map_or(true, |(_, l)| len > l) {
+        if top_level && self.best_literal.is_none_or(|(_, l)| len > l) {
           self.best_literal = Some((off, len));
         }
         self.code.push(Instr::Literal { off, len });
@@ -268,18 +268,17 @@ fn pack_extension(pool: &[u8], off: u32, len: u32) -> u64 {
 fn detect_shape(prog: &mut Program, _opts: &MatchOptions) -> FastShape {
   let n = prog.code.len();
 
-  if n == 1 {
-    if let Instr::Literal { .. } = &prog.code[0] {
-      return FastShape::Literal;
-    }
+  if n == 1
+    && let Instr::Literal { .. } = &prog.code[0]
+  {
+    return FastShape::Literal;
   }
 
-  if n >= 2 {
-    if let Instr::Star = &prog.code[n - 1] {
-      if let Some(plen) = literal_run_len(&prog.code, 0, n - 1) {
-        return FastShape::PrefixStar { prefix_len: plen };
-      }
-    }
+  if n >= 2
+    && let Instr::Star = &prog.code[n - 1]
+    && let Some(plen) = literal_run_len(&prog.code, 0, n - 1)
+  {
+    return FastShape::PrefixStar { prefix_len: plen };
   }
 
   if let Some(star_idx) = find_single_star(&prog.code) {
@@ -297,41 +296,39 @@ fn detect_shape(prog: &mut Program, _opts: &MatchOptions) -> FastShape {
     }
   }
 
-  if n == 3 {
-    if let (Instr::Globstar, Instr::Sep, Instr::Literal { off, len }) =
+  if n == 3
+    && let (Instr::Globstar, Instr::Sep, Instr::Literal { off, len }) =
       (&prog.code[0], &prog.code[1], &prog.code[2])
-    {
-      return FastShape::GlobstarLiteral {
-        suffix_off: *off,
-        suffix_len: *len,
-      };
-    }
+  {
+    return FastShape::GlobstarLiteral {
+      suffix_off: *off,
+      suffix_len: *len,
+    };
   }
 
-  if n == 4 {
-    if let (Instr::Globstar, Instr::Sep, Instr::Star, Instr::Literal { off, len }) =
+  if n == 4
+    && let (Instr::Globstar, Instr::Sep, Instr::Star, Instr::Literal { off, len }) =
       (&prog.code[0], &prog.code[1], &prog.code[2], &prog.code[3])
-    {
-      let (off, len) = (*off, *len);
-      let suffix = &prog.pool[off as usize..(off + len) as usize];
-      if !suffix.iter().any(|&b| b == b'/' || b == b'\\') {
-        if !suffix.is_empty() && suffix[0] == b'.' {
-          let packed = if len as usize <= 8 {
-            pack_extension(&prog.pool, off, len)
-          } else {
-            0
-          };
-          return FastShape::EndsWithLiteral {
-            tail_off: off,
-            tail_len: len,
-            tail_packed: packed,
-          };
-        }
-        return FastShape::GlobstarStarSuffix {
-          suffix_off: off,
-          suffix_len: len,
+  {
+    let (off, len) = (*off, *len);
+    let suffix = &prog.pool[off as usize..(off + len) as usize];
+    if !suffix.iter().any(|&b| b == b'/' || b == b'\\') {
+      if !suffix.is_empty() && suffix[0] == b'.' {
+        let packed = if len as usize <= 8 {
+          pack_extension(&prog.pool, off, len)
+        } else {
+          0
+        };
+        return FastShape::EndsWithLiteral {
+          tail_off: off,
+          tail_len: len,
+          tail_packed: packed,
         };
       }
+      return FastShape::GlobstarStarSuffix {
+        suffix_off: off,
+        suffix_len: len,
+      };
     }
   }
 
@@ -361,13 +358,13 @@ fn detect_shape(prog: &mut Program, _opts: &MatchOptions) -> FastShape {
           None
         }
       };
-      if let Some(alts) = case_a {
-        if let Some(range) = collect_brace_lits(prog, alts, true) {
-          return FastShape::DottedExtensions {
-            exts_off: range.0,
-            exts_len: range.1,
-          };
-        }
+      if let Some(alts) = case_a
+        && let Some(range) = collect_brace_lits(prog, alts, true)
+      {
+        return FastShape::DottedExtensions {
+          exts_off: range.0,
+          exts_len: range.1,
+        };
       }
 
       let case_b = {
@@ -379,50 +376,47 @@ fn detect_shape(prog: &mut Program, _opts: &MatchOptions) -> FastShape {
       };
       if let Some(alts) = case_b {
         let all_dotted = brace_alts_all_dotted(prog, alts);
-        if all_dotted {
-          if let Some(range) = collect_brace_lits(prog, alts, false) {
-            return FastShape::DottedExtensions {
-              exts_off: range.0,
-              exts_len: range.1,
-            };
-          }
+        if all_dotted && let Some(range) = collect_brace_lits(prog, alts, false) {
+          return FastShape::DottedExtensions {
+            exts_off: range.0,
+            exts_len: range.1,
+          };
         }
       }
     }
   }
 
-  if n >= 5 {
-    if let (Instr::Globstar, Instr::Sep, Instr::Star, Instr::BraceOpen { alts, .. }) =
+  if n >= 5
+    && let (Instr::Globstar, Instr::Sep, Instr::Star, Instr::BraceOpen { alts, .. }) =
       (&prog.code[0], &prog.code[1], &prog.code[2], &prog.code[3])
-    {
-      let (a, b) = *alts;
-      let mut suffixes: Vec<(u32, u32)> = Vec::with_capacity((b - a) as usize);
-      let mut ok = true;
-      for i in a..b {
-        let pc = prog.alt_table[i as usize] as usize;
-        if let Some(Instr::Literal { off, len }) = prog.code.get(pc) {
-          let next = prog.code.get(pc + 1);
-          let terminates = matches!(next, Some(Instr::BraceJumpEnd(_)) | Some(Instr::BraceEnd));
-          let suffix = &prog.pool[*off as usize..(*off + *len) as usize];
-          if !terminates || suffix.iter().any(|&x| x == b'/' || x == b'\\') {
-            ok = false;
-            break;
-          }
-          suffixes.push((*off, *len));
-        } else {
+  {
+    let (a, b) = *alts;
+    let mut suffixes: Vec<(u32, u32)> = Vec::with_capacity((b - a) as usize);
+    let mut ok = true;
+    for i in a..b {
+      let pc = prog.alt_table[i as usize] as usize;
+      if let Some(Instr::Literal { off, len }) = prog.code.get(pc) {
+        let next = prog.code.get(pc + 1);
+        let terminates = matches!(next, Some(Instr::BraceJumpEnd(_)) | Some(Instr::BraceEnd));
+        let suffix = &prog.pool[*off as usize..(*off + *len) as usize];
+        if !terminates || suffix.iter().any(|&x| x == b'/' || x == b'\\') {
           ok = false;
           break;
         }
+        suffixes.push((*off, *len));
+      } else {
+        ok = false;
+        break;
       }
-      if ok && !suffixes.is_empty() {
-        let start = prog.suffix_table.len() as u32;
-        prog.suffix_table.extend(suffixes);
-        let endx = prog.suffix_table.len() as u32;
-        return FastShape::GlobstarStarSuffixes {
-          suffixes_off: start,
-          suffixes_len: endx - start,
-        };
-      }
+    }
+    if ok && !suffixes.is_empty() {
+      let start = prog.suffix_table.len() as u32;
+      prog.suffix_table.extend(suffixes);
+      let endx = prog.suffix_table.len() as u32;
+      return FastShape::GlobstarStarSuffixes {
+        suffixes_off: start,
+        suffixes_len: endx - start,
+      };
     }
   }
 
@@ -503,18 +497,18 @@ fn collect_brace_lits(
 }
 
 fn literal_run_at(code: &[Instr], start: usize, end: usize, _pool: &[u8]) -> Option<(u32, u32)> {
-  if end - start == 1 {
-    if let Instr::Literal { off, len } = &code[start] {
-      return Some((*off, *len));
-    }
+  if end - start == 1
+    && let Instr::Literal { off, len } = &code[start]
+  {
+    return Some((*off, *len));
   }
   None
 }
 
 fn literal_run_len(code: &[Instr], start: usize, end: usize) -> Option<u32> {
   let mut total = 0u32;
-  for i in start..end {
-    match &code[i] {
+  for ins in code.iter().skip(start).take(end - start) {
+    match ins {
       Instr::Literal { len, .. } => total += *len,
       Instr::Sep => total += 1,
       _ => return None,

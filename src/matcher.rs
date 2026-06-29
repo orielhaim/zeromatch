@@ -328,17 +328,17 @@ fn globstar_star_suffix_dotrule(
 
 #[inline]
 pub fn match_anchored_dispatch(prog: &Program, opts: &MatchOptions, input: &[u8]) -> bool {
-  if let Some((off, len)) = prog.prefilter {
-    if len >= 2 {
-      let needle = &prog.pool[off as usize..(off + len) as usize];
-      let hay_ok = if opts.nocase {
-        memmem_nocase(input, needle)
-      } else {
-        memchr::memmem::find(input, needle).is_some()
-      };
-      if !hay_ok {
-        return false;
-      }
+  if let Some((off, len)) = prog.prefilter
+    && len >= 2
+  {
+    let needle = &prog.pool[off as usize..(off + len) as usize];
+    let hay_ok = if opts.nocase {
+      memmem_nocase(input, needle)
+    } else {
+      memchr::memmem::find(input, needle).is_some()
+    };
+    if !hay_ok {
+      return false;
     }
   }
   let mut ctx = MatchCtx { prog, opts, input };
@@ -516,12 +516,11 @@ impl<'a> MatchCtx<'a> {
             }
             if followed_by_sep {
               let skip_pc = next_pc + 1;
-              if skip_pc <= end_pc {
-                if let MatchResult::Ok(end) =
+              if skip_pc <= end_pc
+                && let MatchResult::Ok(end) =
                   self.exec(skip_pc, probe, end_pc, at_start || probe == 0)
-                {
-                  return MatchResult::Ok(end);
-                }
+              {
+                return MatchResult::Ok(end);
               }
             }
             if probe >= self.input.len() {
@@ -535,10 +534,10 @@ impl<'a> MatchCtx<'a> {
           let end_after = *end;
           for i in a..b {
             let alt_pc = unsafe { *self.prog.alt_table.get_unchecked(i as usize) };
-            if let MatchResult::Ok(end_pi) = self.exec(alt_pc, pi, end_after - 1, at_start) {
-              if let MatchResult::Ok(final_end) = self.exec(end_after, end_pi, end_pc, false) {
-                return MatchResult::Ok(final_end);
-              }
+            if let MatchResult::Ok(end_pi) = self.exec(alt_pc, pi, end_after - 1, at_start)
+              && let MatchResult::Ok(final_end) = self.exec(end_after, end_pi, end_pc, false)
+            {
+              return MatchResult::Ok(final_end);
             }
           }
           return MatchResult::Fail;
@@ -683,12 +682,12 @@ impl<'a> MatchCtx<'a> {
           let mut advanced = false;
           for k in 0..alts_len {
             let alt_pc = unsafe { *alts_base.add(k) };
-            if let MatchResult::Ok(end) = self.exec(alt_pc, cur, inner_end, at_start && cur == pi) {
-              if end > cur {
-                cur = end;
-                advanced = true;
-                break;
-              }
+            if let MatchResult::Ok(end) = self.exec(alt_pc, cur, inner_end, at_start && cur == pi)
+              && end > cur
+            {
+              cur = end;
+              advanced = true;
+              break;
             }
           }
           if !advanced {
@@ -705,13 +704,13 @@ impl<'a> MatchCtx<'a> {
           let mut advanced = false;
           for k in 0..alts_len {
             let alt_pc = unsafe { *alts_base.add(k) };
-            if let MatchResult::Ok(end) = self.exec(alt_pc, cur, inner_end, at_start && cur == pi) {
-              if end > cur {
-                cur = end;
-                count += 1;
-                advanced = true;
-                break;
-              }
+            if let MatchResult::Ok(end) = self.exec(alt_pc, cur, inner_end, at_start && cur == pi)
+              && end > cur
+            {
+              cur = end;
+              count += 1;
+              advanced = true;
+              break;
             }
           }
           if !advanced {
@@ -730,11 +729,11 @@ impl<'a> MatchCtx<'a> {
           let mut any = false;
           for k in 0..alts_len {
             let alt_pc = unsafe { *alts_base.add(k) };
-            if let MatchResult::Ok(end) = self.exec(alt_pc, pi, inner_end, at_start) {
-              if end == cur + 1 {
-                any = true;
-                break;
-              }
+            if let MatchResult::Ok(end) = self.exec(alt_pc, pi, inner_end, at_start)
+              && end == cur + 1
+            {
+              any = true;
+              break;
             }
           }
           if any {
@@ -745,11 +744,11 @@ impl<'a> MatchCtx<'a> {
         let mut empty_any = false;
         for k in 0..alts_len {
           let alt_pc = unsafe { *alts_base.add(k) };
-          if let MatchResult::Ok(end) = self.exec(alt_pc, pi, inner_end, at_start) {
-            if end == pi {
-              empty_any = true;
-              break;
-            }
+          if let MatchResult::Ok(end) = self.exec(alt_pc, pi, inner_end, at_start)
+            && end == pi
+          {
+            empty_any = true;
+            break;
           }
         }
         if empty_any {
@@ -884,9 +883,7 @@ fn memmem_nocase_from(haystack: &[u8], needle_lower: &[u8], from: usize) -> Opti
     } else {
       memchr::memchr2(nl, nu, &haystack[i..]).map(|r| r + i)
     };
-    let Some(start) = rel else {
-      return None;
-    };
+    let start = rel?;
     if start + needle_lower.len() > haystack.len() {
       return None;
     }

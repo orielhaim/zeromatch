@@ -240,17 +240,18 @@ impl<'a> Parser<'a> {
         found_close = true;
         break;
       }
-      if b == b'[' && self.peek_at(1) == Some(b':') {
-        if let Some(end) = find_seq(&self.bytes[self.pos..], b":]") {
-          let name = &self.bytes[self.pos + 2..self.pos + end];
-          if let Some(named) = posix_class(name) {
-            for w in 0..4 {
-              cls.bits[w] |= named.bits[w];
-            }
-            self.pos += end + 2;
-            first = false;
-            continue;
+      if b == b'['
+        && self.peek_at(1) == Some(b':')
+        && let Some(end) = find_seq(&self.bytes[self.pos..], b":]")
+      {
+        let name = &self.bytes[self.pos + 2..self.pos + end];
+        if let Some(named) = posix_class(name) {
+          for w in 0..4 {
+            cls.bits[w] |= named.bits[w];
           }
+          self.pos += end + 2;
+          first = false;
+          continue;
         }
       }
       let lo = self.read_class_byte()?;
