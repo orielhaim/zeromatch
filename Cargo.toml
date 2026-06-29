@@ -1,0 +1,31 @@
+[package]
+edition = "2024"
+name = "zeromatch"
+version = "1.0.0"
+description = "Blazing-fast, picomatch-compatible glob matching, powered by a linear-time Rust bytecode VM."
+license = "MIT"
+rust-version = "1.96"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+napi = { version = "3.9", default-features = false, features = ["napi9"] }
+napi-derive = "3.5"
+memchr = "2.7"
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+opt-level = 3
+panic = "abort"
+debug = false
+incremental = false
+overflow-checks = false
+
+[profile.release.package."*"]
+opt-level = 3
