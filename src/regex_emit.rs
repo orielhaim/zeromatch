@@ -1,6 +1,6 @@
 use crate::ast::{ExtKind, Node};
 use crate::options::{MatchOptions, Mode};
-use crate::parse::{parse, ParseError};
+use crate::parse::{ParseError, parse};
 
 pub fn make_re_source(pattern: &str, opts: &MatchOptions) -> Result<String, ParseError> {
   let ast = parse(pattern, opts)?;

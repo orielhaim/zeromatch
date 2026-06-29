@@ -1,23 +1,12 @@
 use crate::ast::{ExtKind, Node};
 use crate::matcher::{
-  // Shape-specialized.
-  match_anchored_dispatch,
-  match_anywhere_dispatch,
-  match_dotted_extensions,
-  match_ends_with_literal,
-  match_globstar_literal,
-  match_globstar_star_suffix,
-  match_globstar_star_suffixes,
-  match_literal,
-  match_prefix_star,
-  match_prefix_star_suffix,
-  // Wrappers.
-  matcher_basename_then,
-  matcher_negate_then,
-  MatcherFn,
+  MatcherFn, match_anchored_dispatch, match_anywhere_dispatch, match_dotted_extensions,
+  match_ends_with_literal, match_globstar_literal, match_globstar_star_suffix,
+  match_globstar_star_suffixes, match_literal, match_prefix_star, match_prefix_star_suffix,
+  matcher_basename_then, matcher_negate_then,
 };
 use crate::options::MatchOptions;
-use crate::parse::{parse, ParseError};
+use crate::parse::{ParseError, parse};
 use crate::util::ByteClass;
 
 #[derive(Clone, Debug)]

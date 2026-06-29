@@ -1,6 +1,6 @@
 use crate::ast::{ExtKind, Node, Pattern};
 use crate::options::MatchOptions;
-use crate::util::{posix_class, ByteClass};
+use crate::util::{ByteClass, posix_class};
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
@@ -368,7 +368,7 @@ impl<'a> Parser<'a> {
           return Err(ParseError {
             message: "unterminated extglob",
             position: self.pos,
-          })
+          });
         }
       }
     }

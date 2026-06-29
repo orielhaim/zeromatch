@@ -28,13 +28,17 @@ Pattern: `**/needle.{js,ts,tsx,jsx,mdx}` against `some/a/bigger/path/to/the/craz
 
 | Workload | picomatch | zeromatch |
 |---|---|---|
-| Compile + match once | 0.48 M ops/s | **1.08 M ops/s** (2.2×) |
-| Cached single match | **10.4 M ops/s** | 7.7 M ops/s |
-| Cached × 1000 paths | 22.3 K ops/s (22.3 M paths/s) | 8.1 K ops/s (8.1 M paths/s) |
+| Compile + match once | 0.70–0.85 M ops/s | **1.25–1.45 M ops/s** (≈2×) |
+| Cached single match | **8–10.5 M ops/s** | 7.5–8.2 M ops/s |
+| Cached × 1000 paths | 22–23 M paths/s | 8–10.5 M paths/s |
 
-Numbers from `tinybench` on a Windows x64 machine. Your mileage will vary by CPU and Node version; run `bun run bench` to measure on your hardware.
+Numbers from `tinybench` on Windows x64 (Node 20+). Results vary by CPU and runtime conditions.
 
-Honest read: picomatch wins the single-call cached benchmark. zeromatch wins one-shot by 2×, and the gap widens further as patterns get more complex. If your workload is dominated by repeated calls against a hot, simple pattern, picomatch is hard to displace; for everything else, zeromatch is faster.
+### Interpretation
+
+- **zeromatch is consistently faster in one-shot workloads (≈2×).**
+- **picomatch retains an advantage in tight cached single-call loops.**
+- Batched workloads depend heavily on call pattern and boundary overhead.
 
 ## Usage
 

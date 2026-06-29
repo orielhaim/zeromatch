@@ -56,13 +56,8 @@ impl ByteClass {
 
 #[inline(always)]
 pub fn ascii_lower(b: u8) -> u8 {
-  // Branchless: add 0x20 iff b ∈ A..=Z.
   let is_upper = b.wrapping_sub(b'A') < 26;
-  if is_upper {
-    b | 0x20
-  } else {
-    b
-  }
+  if is_upper { b | 0x20 } else { b }
 }
 
 pub fn posix_class(name: &[u8]) -> Option<ByteClass> {

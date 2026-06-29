@@ -1,9 +1,9 @@
 use std::cell::UnsafeCell;
 use std::ptr;
 
+use napi::JsString;
 use napi::bindgen_prelude::*;
 use napi::sys;
-use napi::JsString;
 use napi_derive::napi;
 
 use crate::compile::CompiledGlob;
