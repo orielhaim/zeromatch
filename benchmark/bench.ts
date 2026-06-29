@@ -1,5 +1,5 @@
-import { Bench } from "tinybench";
 import pm from "picomatch";
+import { Bench } from "tinybench";
 import { Glob, isMatch } from "../index.js";
 
 const pattern = "**/needle.{js,ts,tsx,jsx,mdx}";

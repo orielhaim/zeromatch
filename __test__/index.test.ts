@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { Glob, GlobSet, isMatch, makeRe, scan } from "../index.js";
 
 test("literal match", () => {
