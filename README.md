@@ -1,5 +1,8 @@
 # zeromatch
 
+[![Status](https://img.shields.io/badge/status-stable-green?style=flat-square)](https://github.com/orielhaim/TunTun)
+[![Discord](https://img.shields.io/badge/discord-join%20server-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/y5bNc3MYKz)
+
 A fast, picomatch-compatible glob matcher for Node.js, written in Rust.
 
 ```bash
